@@ -1,7 +1,6 @@
 import pygame
-from pygame.locals import *
-
 from life import GameOfLife
+from pygame.locals import *
 from ui import UI
 
 
@@ -87,7 +86,6 @@ class GUI(UI):
                     running = False
             self.draw_grid()
             self.draw_lines()
-            self.life.grid = self.life.get_next_generation()
             if not paused:
                 self.life.step()
             if self.life.is_max_generations_exceeded or not self.life.is_changing:
