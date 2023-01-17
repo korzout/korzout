@@ -3,10 +3,10 @@ from bs4 import BeautifulSoup
 
 
 def extract_news(parser):
-    """ Extract news from a given web page """
+    """Extract news from a given web page"""
     news_list = []
-    #lst = parser.select("a span")
-    #lst = parser.body.findAll("span", class_="titleline")
+    # lst = parser.select("a span")
+    # lst = parser.body.findAll("span", class_="titleline")
 
     urls_list = parser.body.findAll("span", class_="sitestr")
     for i in range(len(urls_list)):
@@ -26,19 +26,21 @@ def extract_news(parser):
 
     comments_list = parser.body.findAll("span", class_="subline")
     for i in range(len(comments_list)):
-        com = comments_list[i].findAll("a")[-1].string.split('\xa0')[0]
-        if com != 'discuss':
+        com = comments_list[i].findAll("a")[-1].string.split("\xa0")[0]
+        if com != "discuss":
             comments_list[i] = int(com)
         else:
             comments_list[i] = 0
-    minlen = min(len(comments_list),len(points_list),len(names_list),len(titles_list),len(urls_list))
+    minlen = min(
+        len(comments_list), len(points_list), len(names_list), len(titles_list), len(urls_list)
+    )
     for i in range(minlen):
         d = {
-        'author': names_list[i],
-        'comments': comments_list[i],
-        'points': points_list[i],
-        'title': titles_list[i],
-        'url': urls_list[i]
+            "author": names_list[i],
+            "comments": comments_list[i],
+            "points": points_list[i],
+            "title": titles_list[i],
+            "url": urls_list[i],
         }
         news_list.append(d)
 
@@ -46,11 +48,12 @@ def extract_news(parser):
 
 
 def extract_next_page(parser):
-    """ Extract next page URL """
+    """Extract next page URL"""
     return parser.find("a", class_="morelink")["href"]
 
+
 def get_news(url, n_pages=1):
-    """ Collect news from a given web page """
+    """Collect news from a given web page"""
     news = []
     while n_pages:
         print("Collecting data from page: {}".format(url))
