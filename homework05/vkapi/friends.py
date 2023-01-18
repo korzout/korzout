@@ -28,7 +28,18 @@ def get_friends(
     :param fields: Список полей, которые нужно получить для каждого пользователя.
     :return: Список идентификаторов друзей пользователя или список пользователей.
     """
-    pass
+    # используя запрос к методу friends.get, получаем информацию о друзьях пользователя
+    friends = session.get(
+        "friends.get",
+        user_id=user_id,
+        count=count,
+        offset=offset,
+        fields=fields,
+        v=config.VK_CONFIG["version"],
+        access_token=config.VK_CONFIG["access_token"],
+    ).json()["response"]
+
+    return FriendsResponse(friends["count"], friends["items"])
 
 
 class MutualFriends(tp.TypedDict):
@@ -40,7 +51,7 @@ class MutualFriends(tp.TypedDict):
 def get_mutual(
     source_uid: tp.Optional[int] = None,
     target_uid: tp.Optional[int] = None,
-    target_uids: tp.Optional[tp.List[int]] = None,
+    target_uids: tp.Optional[tp.List[tp.Optional[int]]] = None,
     order: str = "",
     count: tp.Optional[int] = None,
     offset: int = 0,
@@ -48,7 +59,6 @@ def get_mutual(
 ) -> tp.Union[tp.List[int], tp.List[MutualFriends]]:
     """
     Получить список идентификаторов общих друзей между парой пользователей.
-
     :param source_uid: Идентификатор пользователя, чьи друзья пересекаются с друзьями пользователя с идентификатором target_uid.
     :param target_uid: Идентификатор пользователя, с которым необходимо искать общих друзей.
     :param target_uids: Cписок идентификаторов пользователей, с которыми необходимо искать общих друзей.
@@ -57,4 +67,30 @@ def get_mutual(
     :param offset: Смещение, необходимое для выборки определенного подмножества общих друзей.
     :param progress: Callback для отображения прогресса.
     """
-    pass
+
+    # обобщаем данные на случай при запросе одного юзера
+    if target_uids is None:
+        target_uids = [target_uid]
+
+    result = []
+    # так как метод friends.getMutual не позволяет количеству элементов target_uids превышать 100, то берем
+    # по 100 идентификаторов и делаем запросы
+    for i in range(max(len(target_uids) // 100, 1)):
+        # записываем данные об общих друзьях
+        result += session.get(
+            "friends.getMutual",
+            source_uid=source_uid,
+            target_uids=target_uids,
+            order=order,
+            count=count,
+            offset=offset + i * 100,
+            v=config.VK_CONFIG["version"],
+            access_token=config.VK_CONFIG["access_token"],
+        ).json()["response"]
+        # ждем, чтобы не превышать максимальное количество запросов в секунду
+        if i % 100 == 0:
+            time.sleep(1)
+    # обрабатываем случай при одном пользователе и выводим ответ
+    if target_uid is not None:
+        return result[0]["common_friends"]
+    return result

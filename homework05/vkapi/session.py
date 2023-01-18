@@ -22,10 +22,28 @@ class Session:
         max_retries: int = 3,
         backoff_factor: float = 0.3,
     ) -> None:
-        pass
+
+        self.base_url = base_url
+        self.timeout = timeout
+        # начинаем сессию
+        self.session = requests.Session()
+        # создаем условия для повторных запросов при ошибке
+        retries = Retry(
+            total=max_retries,
+            backoff_factor=backoff_factor,
+            status_forcelist=[500, 502, 503, 504],
+        )
+        # создаем http адаптер
+        a = HTTPAdapter(max_retries=retries)
+        # подключаем адаптер к запущенной сессии
+        self.session.mount("https://", a)
 
     def get(self, url: str, *args: tp.Any, **kwargs: tp.Any) -> requests.Response:
-        pass
+        # посылаем get-запрос в запущенной сессии
+        response = self.session.get(f"{self.base_url}/{url}", params=kwargs, timeout=self.timeout)
+        return response
 
     def post(self, url: str, *args: tp.Any, **kwargs: tp.Any) -> requests.Response:
-        pass
+        # посылаем post-запрос в запущенной сессии
+        response = self.session.post(f"{self.base_url}/{url}", data=kwargs, timeout=self.timeout)
+        return response
