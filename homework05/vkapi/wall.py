@@ -4,6 +4,7 @@ import typing as tp
 from string import Template
 
 import pandas as pd
+import requests
 from pandas import json_normalize
 
 from vkapi import config, session
@@ -20,7 +21,25 @@ def get_posts_2500(
     extended: int = 0,
     fields: tp.Optional[tp.List[str]] = None,
 ) -> tp.Dict[str, tp.Any]:
-    pass
+    code = """return API.wall.get({
+                    '"owner_id": "owner_id"',
+                    '"domain": "domain"',
+                    '"offset": offset',
+                    '"count": "1"',
+                    '"filter": "filter"',
+                    '"extended": extended',
+                    '"fields": "fields"',
+                    '"v": "v"'
+                    });"""
+    response = requests.post(
+        url=f"{config.VK_CONFIG['domain']}/execute",
+        data={
+            "code": code,
+            "access_token": f"{config.VK_CONFIG['access_token']}",
+            "v": f"{config.VK_CONFIG['version']}",
+        },
+    )
+    return response.json()["response"]["items"]
 
 
 def get_wall_execute(
@@ -49,4 +68,13 @@ def get_wall_execute(
     :param fields: Список дополнительных полей для профилей и сообществ, которые необходимо вернуть.
     :param progress: Callback для отображения прогресса.
     """
-    pass
+    response: tp.List[str] = []
+    # используем get_posts_2500 для извлечения информации о постах
+    for i in range(max(1, count // 2500)):
+        response += get_posts_2500(
+            owner_id, domain, i * 2500, max_count, max_count, filter, extended, fields
+        )
+        # ожидаем, тобы не превышать лимит запросов
+        if i % 2 == 0:
+            time.sleep(2)
+    return json_normalize(response)

@@ -18,7 +18,15 @@ def ego_network(
     :param user_id: Идентификатор пользователя, для которого строится граф друзей.
     :param friends: Идентификаторы друзей, между которыми устанавливаются связи.
     """
-    pass
+    #собираем данные об общих друзьях
+    mutual = get_mutual(source_uid=user_id, target_uids=friends)
+
+    network = []
+    # заполняем список ребер, перебирая связи пользователей
+    for first in mutual:
+        for second in first["common_friends"]:
+            network.append((first["id"], second))
+    return network
 
 
 def plot_ego_network(net: tp.List[tp.Tuple[int, int]]) -> None:
